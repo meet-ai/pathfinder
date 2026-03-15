@@ -4,7 +4,7 @@
 
 **Languages:** [English](README.md) · [中文](README.zh-CN.md)
 
-[Design doc](design/多智能体目标工作流设计.md) · [Features](../FEATURES.md) · [Doc maintenance](#doc-maintenance--github)
+[Design doc](design/workflow-design.md) · [Features](../FEATURES.en.md) · [Doc maintenance](#doc-maintenance--github)
 
 ---
 
@@ -12,19 +12,19 @@
 
 ### Getting started
 
-- [Multi-agent goal workflow design](design/多智能体目标工作流设计.md) — Five phases, mapping to existing frameworks, recommended architecture, OpenClaw comparison.
-- [Features (FEATURES)](../FEATURES.md) — Deliverables with IDs, descriptions, acceptance criteria, for Issue/Project.
+- [Multi-agent goal workflow design](design/workflow-design.md) — Five phases, mapping to existing frameworks, recommended architecture, OpenClaw comparison.
+- [Features (FEATURES)](../FEATURES.en.md) — Deliverables with IDs, descriptions, acceptance criteria, for Issue/Project.
 
 ### Design
 
-- [Multi-agent goal workflow design](design/多智能体目标工作流设计.md) — Full flow: publish → plan → execute → Skill/Tool generation and progress/cancel → summarize.
-- [Phases and framework mapping](design/多智能体目标工作流设计.md#四各阶段与框架对照小结) — Quick reference table.
-- [OpenClaw-only feasibility](design/多智能体目标工作流设计.md#五仅用-openclaw-能否直接实现) — Capability comparison and conclusion.
+- [Multi-agent goal workflow design](design/workflow-design.md) — Full flow: publish → plan → execute → Skill/Tool generation and progress/cancel → summarize.
+- [Phase vs framework summary](design/workflow-design.md#4-phase-vs-framework-summary) — Quick reference table.
+- [OpenClaw-only feasibility](design/workflow-design.md#5-can-openclaw-alone-implement-this) — Capability comparison and conclusion.
 
 ### Architecture and integration
 
-- [Recommended architecture](design/多智能体目标工作流设计.md#三推荐整体架构对齐你的-15) — Orchestration (LangGraph) and execution (OpenClaw/acpx).
-- [F7.x: Architecture and integration](../FEATURES.md#七架构与集成) — Separation of concerns, OpenClaw/ClawHub/acpx, “OpenClaw only” mode.
+- [Recommended architecture](design/workflow-design.md#3-recommended-architecture-phases-1-5) — Orchestration (LangGraph) and execution (OpenClaw/acpx).
+- [F7.x: Architecture and integration](../FEATURES.en.md#7-architecture-and-integration) — Separation of concerns, OpenClaw/ClawHub/acpx, “OpenClaw only” mode.
 
 ### Implementation and selection
 

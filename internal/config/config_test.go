@@ -22,13 +22,15 @@ func TestDefault(t *testing.T) {
 
 func TestLoad_noFile_usesDefault(t *testing.T) {
 	dir := t.TempDir()
-	os.Setenv("PATHFINDER_CONFIG_DIR", dir)
-	defer os.Unsetenv("PATHFINDER_CONFIG_DIR")
+	// PATHFINDER_WORKSPACE 指向含 config.toml 的目录时，该目录即 configDir；无 config.toml 时 configDir=dir, workspace=dir/workspace
+	os.Setenv("PATHFINDER_WORKSPACE", dir)
+	defer os.Unsetenv("PATHFINDER_WORKSPACE")
 
 	c, err := Load()
 	if err != nil {
 		t.Fatal(err)
 	}
+	// 无 config.toml 时 resolveConfigDirForWorkspace(dir) 返回 (dir, dir/workspace)
 	if c.ConfigPath != filepath.Join(dir, configFileName) {
 		t.Errorf("ConfigPath = %q", c.ConfigPath)
 	}
@@ -48,8 +50,8 @@ default_temperature = 0.5
 `), 0600); err != nil {
 		t.Fatal(err)
 	}
-	os.Setenv("PATHFINDER_CONFIG_DIR", dir)
-	defer os.Unsetenv("PATHFINDER_CONFIG_DIR")
+	os.Setenv("PATHFINDER_WORKSPACE", dir)
+	defer os.Unsetenv("PATHFINDER_WORKSPACE")
 
 	c, err := Load()
 	if err != nil {
@@ -89,8 +91,8 @@ func TestLoad_envVarsFromDotenv(t *testing.T) {
 	if err := os.WriteFile(envPath, []byte("PATHFINDER_PROVIDER=ollama\nSECRET_KEY=from_env\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	os.Setenv("PATHFINDER_CONFIG_DIR", dir)
-	defer os.Unsetenv("PATHFINDER_CONFIG_DIR")
+	os.Setenv("PATHFINDER_WORKSPACE", dir)
+	defer os.Unsetenv("PATHFINDER_WORKSPACE")
 
 	c, err := Load()
 	if err != nil {

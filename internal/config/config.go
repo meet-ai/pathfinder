@@ -1,5 +1,5 @@
 // Package config 提供与 zeroclaw 对齐的配置解析与路径解析。
-// 解析顺序：PATHFINDER_CONFIG_DIR → PATHFINDER_WORKSPACE → ~/.pathfinder（不维护 active_workspace.toml，避免过度设计）。
+// 配置目录解析：PATHFINDER_WORKSPACE（若设）按工作区规则解析，否则默认 ~/.pathfinder。
 // 隐私变量仅通过 .env 配置：先加载 config_dir/.env，再加载 workspace_dir/.env；config.toml 不存 api_key/api_url。
 
 package config
@@ -44,7 +44,7 @@ func Default() Config {
 }
 
 // Load 解析配置路径、读取 TOML、应用环境变量覆盖，返回 *Config。
-// 路径解析优先级：PATHFINDER_CONFIG_DIR > PATHFINDER_WORKSPACE > ~/.pathfinder。
+// 配置目录：PATHFINDER_WORKSPACE 指向含 config.toml 的目录时用该目录，否则默认 ~/.pathfinder。
 func Load() (*Config, error) {
 	configDir, workspaceDir, err := resolveRuntimeDirs()
 	if err != nil {
@@ -191,12 +191,8 @@ func expandTilde(path string) string {
 }
 
 // resolveRuntimeDirs 解析运行时配置目录与工作区目录。
-// 优先级：PATHFINDER_CONFIG_DIR > PATHFINDER_WORKSPACE > 默认 ~/.pathfinder（不维护 active_workspace.toml）。
+// 默认 ~/.pathfinder；若设 PATHFINDER_WORKSPACE 则按工作区规则解析（含 config.toml 的目录为 configDir）。
 func resolveRuntimeDirs() (configDir, workspaceDir string, err error) {
-	if v := os.Getenv("PATHFINDER_CONFIG_DIR"); strings.TrimSpace(v) != "" {
-		dir := expandTilde(strings.TrimSpace(v))
-		return dir, filepath.Join(dir, workspaceSubdir), nil
-	}
 	if v := os.Getenv("PATHFINDER_WORKSPACE"); strings.TrimSpace(v) != "" {
 		ws := expandTilde(strings.TrimSpace(v))
 		cfg, wrk := resolveConfigDirForWorkspace(ws)

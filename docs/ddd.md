@@ -37,7 +37,7 @@
 
 | 阶段 | 业务内容 | 对应特性 |
 |------|----------|----------|
-| 1. 发布任务 | 提交高层目标，获得 run_id/流式句柄；可选参数（超时、优先级、agent 池）。 | F1.1–F1.3 |
+| 1. 发布任务 | 提交高层目标，获得 RunId/StreamHandle；可选参数（超时、优先级、AgentPool）。 | F1.1–F1.3 |
 | 2. 规划与探索 | 任务分解 → 子任务列表；依赖分析 → DAG/顺序；分派建议 agent；结果写 state。 | F2.1–F2.4 |
 | 3. 执行与派发 | 按依赖串行/并行执行；派发到对应 agent；结果写回 state。 | F3.1–F3.4 |
 | 4. Skill/Tool 按需生成 | 检测缺失 → 路由生成；生成并安装/注册；重新调度执行。 | F4.1–F4.6 |
@@ -52,7 +52,7 @@
 
 | 角色 | 操作 | 目的 | 用例名 | 类型 | 优先级 |
 |------|------|------|--------|------|--------|
-| 用户/系统 | 提交高层目标 | 进入工作流并获 run_id/流式句柄 | SubmitGoalUseCase | [O] | P0 |
+| 用户/系统 | 提交高层目标 | 进入工作流并获 RunId/StreamHandle | SubmitGoalUseCase | [O] | P0 |
 | 用户/系统 | 通过消息渠道提交 | 从 Chat/Slack 等触发任务 | SubmitGoalViaChannelUseCase | [O] | P1 |
 | 编排层 | 分解目标、分析依赖、分派 agent | 产出可执行计划 | PlanGoalUseCase | [C] | P0 |
 | 编排层 | 按计划串行/并行执行子任务 | 完成子任务并写回结果 | ExecutePlanUseCase | [O] | P0 |
@@ -128,7 +128,7 @@ ExecutePlanUseCase [O]
 - WorkflowOrchestrationContext → ExecutionStateContext（读写进度、中止判断）
 - WorkflowOrchestrationContext → CapabilityCatalogContext（ListAgents、CheckAgentCapability、登记）
 - WorkflowOrchestrationContext → CapabilityGenerationContext（检测缺失、生成并安装/注册）
-- RuntimeContext → CapabilityCatalogContext（按 agent_id 派发前可查 agent）
+- RuntimeContext → CapabilityCatalogContext（按 AgentId 派发前可查 Agent）
 - CapabilityGenerationContext → CapabilityCatalogContext（安装/登记后更新目录）
 
 ### Shared Kernel（共享）
@@ -282,18 +282,18 @@ channels
 | **config** | Load(), 路径解析 | 无（读文件/环境变量可包内实现） |
 | **provider** | Provider 接口、Factory | 无或 HTTP 客户端（可包内） |
 | **app** | Run(message) | config.Load, orchestration.SubmitGoal / 可选 TUI 启动 |
-| **orchestration** | SubmitGoal, ExecutePlan, SummarizeRun, CancelRun | planning, agent, progress, gateway(Stream), channels(Deliver), skillforge, provider, memory, config |
-| **planning** | Plan 结构、Validate、产出 SubTask/Dependency | 规划器（LLM/planner）由 infra 实现时在 needs |
-| **agent** | 派发、循环、执行体发现 | provider, skills, tools, progress, planning(读 plan), runtime(执行环境) |
-| **progress** | WriteProgress, ReadProgress, Checkpoint, Restore | 持久化存储（infra） |
-| **gateway** | HTTP/SSE/WS 入口、Stream(run_id)、Cancel(run_id) | progress, orchestration.Cancel, config |
-| **channels** | SendMessage, Deliver 等 | 各渠道实现、config |
-| **skillforge** | Scout, Evaluate, Integrate | skills(登记), config |
+| **orchestration** | SubmitGoal, ExecutePlan, SummarizeRun, CancelRun | planning, agent, progress, gateway(StreamPublisher), channels(Deliver), skillforge, provider, memory, config |
+| **planning** | Plan 结构、Validate、产出 SubTask/Dependency | Planner（由 infra 实现） |
+| **agent** | 派发、循环、执行体发现 | Provider, Skills, Tools, TaskProgressRepository, planning(读 Plan), runtime |
+| **progress** | WriteProgress, ReadProgress, Checkpoint, Restore | TaskProgressRepository（由 infra 实现） |
+| **gateway** | HTTP/SSE/WS 入口、Stream(RunId)、Cancel(RunId) | TaskProgressRepository, orchestration.Cancel, config |
+| **channels** | SendMessage, Deliver | 各 Channel 实现、config |
+| **skillforge** | Scout, Evaluate, Integrate | SkillToolRegistry(skills 登记), config |
 | **skills** | 加载、审计、List | 文件系统/ClawHub（needs 或包内） |
 | **tools** | Tool 规范、执行 | 无或由调用方注入 |
 | **runtime** | 执行环境（native/docker） | 无或由 infra 实现具体运行时 |
 | **memory** | 记忆/上下文存储 | 存储后端（infra） |
-| **infra** | 无（仅实现） | 实现各包 needs：持久化、HTTP 客户端、各 channel 实现等 |
+| **infra** | 无（仅实现） | 实现各包 needs：RunRepository、PlanRepository、TaskProgressRepository、AgentDiscovery、Dispatcher、SkillToolRegistry、Planner、StreamPublisher 等 |
 
 - **编排处**：app 或 gateway 的「组装」只依赖各包 **provides（接口）**，具体实现（如某 Provider 实现、某 Channel 实现）在组装处构造并注入，不散落各处 import 实现类。
 
@@ -311,7 +311,7 @@ channels
 
 | 支撑模块 | 职责 | 依赖/对接 | zeroclaw 参考 |
 |----------|------|-----------|---------------|
-| **TUI** | 本地终端 UI：绑定 run_id，订阅进度与流式输出；展示当前阶段（规划/执行/总结）、当前步骤与 agent、子任务进度（如 3/7）、流式日志；支持取消与查看最终结果。 | gateway（SSE/流式）、progress（进度）、orchestration（取消） | — |
+| **TUI** | 本地终端 UI：绑定 RunId，订阅进度与流式输出；展示当前阶段（规划/执行/总结）、当前步骤与 Agent、子任务进度（如 3/7）、流式日志；支持取消与查看最终结果。 | gateway（SSE/流式）、progress（进度）、orchestration（取消） | — |
 | **CLI** | 命令行入口：`pathfinder -m "目标"` / `run --message "..."` 提交目标，可选启动 TUI。 | orchestration（SubmitGoal）、TUI（可选） | channels/cli |
 | **Observability** | 日志、指标、分布式追踪；便于排障与成本/延迟分析。 | 各包埋点、config | observability/ |
 | **Auth** | API、渠道、Gateway 鉴权与身份解析。 | gateway、channels、config | auth/ |
@@ -359,7 +359,7 @@ pathfinder 当前为单用户目标工作流编排，配置仅保留工作流所
 
 ### 条件规则清单（摘要）
 
-- 前置：目标描述非空；Run 创建成功才有 run_id；Plan 产出后才有子任务列表与依赖。
+- 前置：GoalDescription 非空；Run 创建成功才有 RunId；Plan 产出后才有子任务列表与依赖。
 - 后置：子任务按 DAG 执行；执行结果写回 state；取消/超时/失败策略满足后进入中止。
 - 业务规则：超时后不再执行新子任务；cancel_requested 后路由到中止；失败次数超过阈值则中止；规划结果须含子任务、依赖、建议 agent。
 
@@ -372,27 +372,28 @@ pathfinder 当前为单用户目标工作流编排，配置仅保留工作流所
 ## 5.2 名词分类（实体 vs 值对象）
 
 - **实体（有身份、生命周期）**：Run、Plan、SubTask、Agent、TaskProgress、RunProgress、GenerationRequest。
-- **值对象（由属性定义、不可变）**：Dependency、SuggestedAgent、AgentId、SkillId、ToolId、Checkpoint、SkillPackage、ToolSpec、Summary、Report、AgentPoolFilter。
+- **值对象（由属性定义、不可变）**：RunId、PlanId、TaskId、AgentId、SkillId、ToolId、Dependency、SuggestedAgent、GoalDescription、Checkpoint、SkillPackage、ToolSpec、Summary、Report、AgentPoolFilter。
 
 ## 5.3 聚合设计（事务边界）
 
 | 聚合根 | 边界内对象 | 职责概要 | 关键不变条件 |
 |--------|------------|----------|--------------|
 | **Run** | Run, RunProgress 引用 | run 生命周期、取消标志、deadline | 取消后不可再派发新任务；超时后不可再执行新子任务 |
-| **Plan** | Plan, SubTask[], Dependency | 计划结构、校验 | 子任务 id 唯一；依赖引用同一 Plan 内 task_id |
-| **TaskProgress** | TaskProgress（按 run_id+task_id） | 单任务进度、结果 | 状态仅允许约定转换（待办→进行中→完成/失败） |
+| **Plan** | Plan, SubTask[], Dependency | 计划结构、校验 | 子任务 TaskId 唯一；依赖引用同一 Plan 内 TaskId |
+| **TaskProgress** | TaskProgress（按 RunId+TaskId） | 单任务进度、结果 | Status 仅允许约定转换（待办→进行中→完成/失败） |
 | **Agent** | Agent, Skill[], Tool[]（目录视角） | 能力目录内「谁有什么」 | 仅通过登记/安装更新能力，不在此聚合内执行 |
 
-- **关联**：Run 引用 Plan（by ref 或 snapshot）；Run 与 TaskProgress 按 run_id 关联；Dispatch 通过 AgentId 引用 CapabilityCatalog 的 Agent。
+- **关联**：Run 引用 Plan（by ref 或 snapshot）；Run 与 TaskProgress 按 RunId 关联；Dispatcher 通过 AgentId 引用 CapabilityCatalogContext 的 Agent。
 
 ## 5.4 行为分配（实体 vs 领域服务）
 
-- **Run**：Create、Cancel、MarkAborted、IsCancelRequested、IsOverDeadline。
-- **Plan**：Validate、SubTasks、Dependencies、SuggestedAgentFor(task_id)。
-- **TaskProgress**：Start、Complete、Fail、WriteResult；领域服务 **ProgressMaintainer**：BatchUpdateProgress、Checkpoint、Restore。
-- **能力目录**：领域服务 **AgentDiscovery**：ListAgents(filter)、GetAgent(id)；**CapabilityChecker**：HasSkill(agent, skill)、HasTool(agent, tool)、ListSkills(agent)；**SkillToolRegistry**：RegisterSkill、InstallSkill、RegisterTool（接口在领域层，实现在基础设施层）。
-- **能力生成**：领域服务 **SkillGenerator**、**ToolGenerator**（生成规范包/spec）；安装/注册调用 CapabilityCatalog 的 Registry 与外部 ClawHub/框架适配器）。
-- **派发**：领域服务 **Dispatcher**：Dispatch(run_id, task, agent_id)（接口在领域层，实现在基础设施层，调 openclaw/acpx）。
+- **Run（聚合根）**：Create、Cancel、MarkAborted、IsCancelRequested、IsOverDeadline。
+- **Plan（聚合根）**：Validate、SubTasks、Dependencies、SuggestedAgentFor(TaskId)。
+- **TaskProgress（实体）**：Start、Complete、Fail、WriteResult。  
+  领域服务 **ProgressMaintainer**：BatchUpdateProgress、Checkpoint、Restore；端口 **TaskProgressRepository** 持久化。
+- **能力目录（CapabilityCatalogContext）**：领域服务 **AgentDiscovery**（ListAgents、GetAgent）、**CapabilityChecker**（HasSkill、HasTool、ListSkills）、**SkillToolRegistry**（RegisterSkill、InstallSkill、RegisterTool）；端口由 infra 实现。
+- **能力生成（CapabilityGenerationContext）**：领域服务 **SkillGenerator**、**ToolGenerator**；安装/注册通过 **SkillToolRegistry** 与外部 ClawHub/框架适配器。
+- **运行时（RuntimeContext）**：领域服务 **Dispatcher**（Dispatch(RunId, Task, AgentId)）；端口由 infra 实现（如 openclaw/acpx）。
 
 ## 5.5 规则与约束建模（摘要）
 
@@ -408,39 +409,39 @@ pathfinder 当前为单用户目标工作流编排，配置仅保留工作流所
 
 | 用例 | 命令/查询对象 | 应用服务与方法 | 返回 DTO / 事件 |
 |------|----------------|----------------|-----------------|
-| SubmitGoalUseCase | SubmitGoalCommand | WorkflowOrchestrationApplicationService.SubmitGoal() | RunDTO（run_id, stream_handle）, RunCreatedEvent |
-| SubmitGoalViaChannelUseCase | SubmitGoalViaChannelCommand | WorkflowOrchestrationApplicationService.SubmitGoalViaChannel() | RunDTO, RunCreatedEvent |
-| PlanGoalUseCase | PlanGoalCommand | PlanningApplicationService.PlanGoal() | PlanDTO, PlanProducedEvent |
-| ExecutePlanUseCase | （内部编排） | WorkflowOrchestrationApplicationService.ExecutePlan() | RunSummaryDTO, RunCompletedEvent / RunAbortedEvent |
+| SubmitGoalUseCase | SubmitGoalCommand | WorkflowOrchestrationApplicationService.SubmitGoal() | RunDTO（RunId, StreamHandle）、RunCreatedEvent |
+| SubmitGoalViaChannelUseCase | SubmitGoalViaChannelCommand | WorkflowOrchestrationApplicationService.SubmitGoalViaChannel() | RunDTO、RunCreatedEvent |
+| PlanGoalUseCase | PlanGoalCommand | PlanningApplicationService.PlanGoal() | PlanDTO、PlanProducedEvent |
+| ExecutePlanUseCase | （内部编排） | WorkflowOrchestrationApplicationService.ExecutePlan() | RunSummaryDTO、RunCompletedEvent / RunAbortedEvent |
 | DispatchTaskToAgentUseCase | DispatchTaskCommand | RuntimeApplicationService.DispatchTask() | DispatchResultDTO |
 | MaintainTaskProgressUseCase | UpdateTaskProgressCommand | ExecutionStateApplicationService.UpdateTaskProgress() | — |
-| CancelRunUseCase | CancelRunCommand | RuntimeApplicationService.CancelRun() | —, RunCancelledEvent |
-| AbortRunOnConditionUseCase | （监督节点调用） | ExecutionStateApplicationService.EvaluateAbortCondition() | bool + 原因 |
+| CancelRunUseCase | CancelRunCommand | RuntimeApplicationService.CancelRun() | —、RunCancelledEvent |
+| AbortRunOnConditionUseCase | （监督节点调用） | ExecutionStateApplicationService.EvaluateAbortCondition() | shouldAbort + AbortReason |
 | SummarizeRunUseCase | SummarizeRunCommand | WorkflowOrchestrationApplicationService.SummarizeRun() | SummaryDTO |
 | RegisterSkillOrToolToCatalogUseCase | RegisterSkillOrToolCommand | CapabilityCatalogApplicationService.RegisterSkillOrTool() | — |
 | ListAgentsUseCase | ListAgentsQuery | CapabilityCatalogQueryService.ListAgents() | AgentListDTO |
 | CheckAgentCapabilityUseCase | CheckAgentCapabilityQuery | CapabilityCatalogQueryService.CheckAgentCapability() | CapabilityCheckDTO |
 | StreamRunProgressUseCase | StreamRunProgressQuery | RuntimeQueryService.StreamRunProgress() | 流式事件（SSE/WS） |
 
-## 6.2 应用服务接口（按聚合/上下文）
+## 6.2 应用服务接口（按限界上下文）
 
-- **WorkflowOrchestrationApplicationService**：SubmitGoal(ctx, cmd) (*RunDTO, error)；SubmitGoalViaChannel(ctx, cmd) (*RunDTO, error)；ExecutePlan(ctx, runID) error；SummarizeRun(ctx, runID) (*SummaryDTO, error)。
-- **PlanningApplicationService**：PlanGoal(ctx, cmd) (*PlanDTO, error)。
-- **RuntimeApplicationService**：DispatchTask(ctx, cmd) (*DispatchResultDTO, error)；CancelRun(ctx, runID) error。
-- **RuntimeQueryService**：StreamRunProgress(ctx, runID) (Stream, error)。
-- **ExecutionStateApplicationService**：UpdateTaskProgress(ctx, cmd) error；EvaluateAbortCondition(ctx, runID) (shouldAbort bool, reason string, err error)。
-- **CapabilityCatalogApplicationService**：RegisterSkillOrTool(ctx, cmd) error。
-- **CapabilityCatalogQueryService**：ListAgents(ctx, query) (*AgentListDTO, error)；CheckAgentCapability(ctx, query) (*CapabilityCheckDTO, error)。
+- **WorkflowOrchestrationApplicationService**：SubmitGoal(ctx, SubmitGoalCommand) (*RunDTO, error)；SubmitGoalViaChannel(ctx, SubmitGoalViaChannelCommand) (*RunDTO, error)；ExecutePlan(ctx, RunId) error；SummarizeRun(ctx, RunId) (*SummaryDTO, error)。
+- **PlanningApplicationService**：PlanGoal(ctx, PlanGoalCommand) (*PlanDTO, error)。
+- **RuntimeApplicationService**：DispatchTask(ctx, DispatchTaskCommand) (*DispatchResultDTO, error)；CancelRun(ctx, RunId) error。
+- **RuntimeQueryService**：StreamRunProgress(ctx, RunId) (Stream, error)。
+- **ExecutionStateApplicationService**：UpdateTaskProgress(ctx, UpdateTaskProgressCommand) error；EvaluateAbortCondition(ctx, RunId) (shouldAbort bool, AbortReason string, err error)。
+- **CapabilityCatalogApplicationService**：RegisterSkillOrTool(ctx, RegisterSkillOrToolCommand) error。
+- **CapabilityCatalogQueryService**：ListAgents(ctx, ListAgentsQuery) (*AgentListDTO, error)；CheckAgentCapability(ctx, CheckAgentCapabilityQuery) (*CapabilityCheckDTO, error)。
 
 ## 6.3 Command/Query 与 DTO（摘要）
 
-- **SubmitGoalCommand**：GoalDescription, Timeout, Priority, AgentPoolID（可选）。
-- **RunDTO**：RunID, StreamHandle, Status, CreatedAt。
-- **PlanDTO**：PlanID, SubTasks[], Dependencies[], SuggestedAgents（task_id → agent_id）。
-- **DispatchTaskCommand**：RunID, TaskID, AgentID, TaskDescription, Context。
-- **UpdateTaskProgressCommand**：RunID, TaskID, Status, AgentID, StartedAt, Result。
-- **ListAgentsQuery**：Filter（AgentPoolID, CapabilityTags）。
-- **AgentListDTO**：Agents[]（ID, Name, Capabilities, Tags）。
+- **SubmitGoalCommand**：GoalDescription、Timeout、Priority、AgentPoolId（可选）。
+- **RunDTO**：RunId、StreamHandle、Status、CreatedAt。
+- **PlanDTO**：PlanId、SubTasks[]、Dependencies[]、SuggestedAgents（TaskId → AgentId）。
+- **DispatchTaskCommand**：RunId、TaskId、AgentId、TaskDescription、Context。
+- **UpdateTaskProgressCommand**：RunId、TaskId、Status、AgentId、StartedAt、Result。
+- **ListAgentsQuery**：AgentPoolFilter（AgentPoolId、CapabilityTags）。
+- **AgentListDTO**：Agents[]（AgentId、Name、Capabilities、Tags）。
 
 ## 6.4 领域事件（摘要）
 
@@ -454,10 +455,10 @@ pathfinder 当前为单用户目标工作流编排，配置仅保留工作流所
 
 # 基础设施层（Infra）原则
 
-- **端口定义位置**：各职责包内 `needs.go` 定义所需接口（如 AgentDiscovery、Dispatcher、SkillToolRegistry、ProgressRepository）；infra 实现这些接口。
-- **目录组织**：按技术栈分 `clients/`（Gateway、ClawHub、acpx）、`persistence/`（Run、Plan、TaskProgress、Checkpoint）、`adapters/`（按职责包对应，如 `adapters/agent/`、`adapters/runtime/`）；与 zeroclaw 一致处：gateway、config、channels、providers 等按职责独立目录；避免顶级 `services/` 目录；命名体现技术实现（如 `task_progress_repository_sql`、`dispatcher_openclaw`）。
+- **端口定义位置**：各职责包内 `needs.go` 定义所需端口（领域语言命名）：**RunRepository**、**PlanRepository**、**TaskProgressRepository**、**AgentDiscovery**、**CapabilityChecker**、**SkillToolRegistry**、**Dispatcher**、**Planner**（规划器）、**StreamPublisher**（流式推送）；infra 实现这些接口。
+- **目录组织**：按技术栈分 `clients/`（Gateway、ClawHub、acpx）、`persistence/`（实现 RunRepository、PlanRepository、TaskProgressRepository）、`adapters/`（按职责包对应，如 `adapters/agent/`、`adapters/runtime/`）；与 zeroclaw 一致处：gateway、config、channels、provider 等按职责独立目录；避免顶级 `services/` 目录；实现类命名体现技术（如 `task_progress_repository_sql`、`dispatcher_openclaw`），避免 XxxImpl 后缀。
 - **适配器前提**：仅当某能力存在多种可替换实现且含适配逻辑（如模型转换、多系统组合）时，将实现放在 `adapters/` 下；单一实现可放在 `clients/` 或 `persistence/`。
-- **与 FEATURES 八对应**：能力目录端口 → M1 Agent 发现 + M2 Skill/Tool 目录；规划契约 → M5；运行时端口 → M3；执行状态端口 → M4。
+- **与 FEATURES 八对应**：能力目录端口（AgentDiscovery、SkillToolRegistry）→ M1/M2；规划契约（Planner、Plan）→ M5；运行时端口（Dispatcher、StreamPublisher）→ M3；执行状态端口（TaskProgressRepository、ProgressMaintainer）→ M4。
 
 ---
 
