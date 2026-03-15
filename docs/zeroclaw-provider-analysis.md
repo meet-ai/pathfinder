@@ -152,4 +152,4 @@
 | 流式 | StreamChunk + StreamOptions，默认返回“不支持” | 接口返回 stream 或 error“不支持”；消费端统一按 chunk 处理 |
 | 多厂商/容错 | Router + Reliable 包装 | 可选：路由表（model/hint → provider+model）；主/备 + 重试策略 |
 
-pathfinder 若在 Go 侧需要直连 LLM（而非只调 Shawkeye），可先做「Provider interface + OpenAI 兼容实现 + 简单工厂（name → base_url + auth）」，再按需加主实现（如 Anthropic、Ollama）与 Router/Reliable 等价逻辑。Zeroclaw 的 provider 列表与凭证 env 表可直接参考 [providers-reference](zeroclaw 仓库 docs/reference/api/providers-reference.md)。
+pathfinder 若在 Go 侧需要直连 LLM（而非只调 Shawkeye），可先做「Provider interface + OpenAI 兼容实现 + 简单工厂（name → base_url + auth）」，再按需加主实现（如 Anthropic、Ollama）与 Router/Reliable 等价逻辑。Zeroclaw 的 provider 列表与凭证 env 表可直接参考：[providers-reference](https://github.com/zeroclaw-labs/zeroclaw/blob/main/docs/reference/api/providers-reference.md) · [Zeroclaw 中文](https://zeroclaws.io/zh/)。

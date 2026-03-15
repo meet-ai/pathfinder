@@ -3,6 +3,18 @@
 > 基于 FEATURES.md 与《多智能体目标工作流设计》整理；按 DDD 阶段产出用例、限界上下文、领域模型、应用层与基础设施层设计。  
 > 文档时间：2026-03
 
+**DDD 命名约定（本文档统一采用）**  
+- **限界上下文**：`XxxContext`（如 CapabilityCatalogContext、PlanningContext）。  
+- **聚合根 / 实体**：名词单数，PascalCase（Run、Plan、SubTask、Agent、TaskProgress、RunProgress）。  
+- **值对象 / 标识**：`XxxId`、名词短语（RunId、PlanId、TaskId、AgentId、SkillId、ToolId、GoalDescription、SuggestedAgent、Dependency、SkillPackage、ToolSpec）。  
+- **领域服务 / 端口**：能力名词（AgentDiscovery、CapabilityChecker、SkillToolRegistry、Dispatcher、ProgressMaintainer、Planner）。  
+- **仓储端口**：`XxxRepository`（RunRepository、PlanRepository、TaskProgressRepository）。  
+- **用例**：`[动词][业务对象]UseCase`（SubmitGoalUseCase、PlanGoalUseCase）。  
+- **命令 / 查询**：`XxxCommand`、`XxxQuery`（SubmitGoalCommand、ListAgentsQuery）。  
+- **领域事件**：`[聚合根][过去式]Event`（RunCreatedEvent、PlanProducedEvent、TaskProgressUpdatedEvent）。  
+- **应用服务**：`[上下文]ApplicationService` / `[上下文]QueryService`（WorkflowOrchestrationApplicationService、CapabilityCatalogQueryService）。  
+- **DTO**：`XxxDTO`（RunDTO、PlanDTO、SummaryDTO）。
+
 ---
 
 # 第1部分：业务理解
@@ -330,10 +342,11 @@ pathfinder 当前为单用户目标工作流编排，配置仅保留工作流所
 
 ### 名词清单（核心业务概念）
 
-- **核心概念**：Run、Plan、SubTask、Dependency、SuggestedAgent、Agent、Skill、Tool、AgentPool、TaskProgress、RunProgress、Checkpoint、SkillPackage、ToolSpec、GenerationRequest、Summary、Report。
+- **聚合根 / 实体**：Run、Plan、SubTask、Agent、TaskProgress、RunProgress、GenerationRequest。
+- **值对象 / 标识**：RunId、PlanId、TaskId、AgentId、SkillId、ToolId、Dependency、SuggestedAgent、GoalDescription、SkillPackage、ToolSpec、Summary、Report、AgentPoolFilter、Checkpoint。
+- **领域概念**：AgentPool、Skill、Tool（目录内能力）；Status、StartedAt、FinishedAt、Result、Deadline、CancelRequested、Priority、ProgressPercent（进度属性）。
 - **参与者**：用户、编排层、执行层、Agent、监督者。
-- **属性/值**：run_id、task_id、status、agent_id、started_at、result、deadline、cancel_requested、priority、progress_percent。
-- **时间/地点**：started_at、finished_at、created_at；channel（消息渠道）、workspace（skills 目录）。
+- **渠道/位置**：Channel（消息渠道）、Workspace（skills 目录）。
 
 ### 动词清单（行为）
 

@@ -1,79 +1,82 @@
-# Pathfinder 文档索引
+# Pathfinder docs index
 
-> 需要查设计、架构或维护方式时，从下面入口找。本页是文档导航与「什么在哪里」。
+> Use this page to find design, architecture, or maintenance docs. It is the navigation and “what lives where” map.
 
-[设计文档](design/多智能体目标工作流设计.md) · [特性列表](../FEATURES.md) · [文档维护说明](#文档维护说明--github-展示)
+**Languages:** [English](README.md) · [中文](README.zh-CN.md)
 
----
-
-## 文档（按用途）
-
-### 入门与总览
-
-- [多智能体目标工作流设计](design/多智能体目标工作流设计.md) — 目标工作流五阶段、与现有框架的能力映射、推荐架构与 OpenClaw 能力对照。
-- [特性列表（FEATURES）](../FEATURES.md) — 按阶段/能力域分组的可交付特性，带 ID、描述与验收标准，便于 Issue/Project 引用。
-
-### 设计
-
-- [多智能体目标工作流设计](design/多智能体目标工作流设计.md) — 全文：发布任务 → 规划探索 → 执行派发 → Skill/Tool 按需生成与进度/中止 → 整理总结。
-- [各阶段与框架对照小结](design/多智能体目标工作流设计.md#四各阶段与框架对照小结) — 表格速查。
-- [仅用 OpenClaw 能否实现](design/多智能体目标工作流设计.md#五仅用-openclaw-能否直接实现) — 能力逐项对照与结论。
-
-### 架构与集成
-
-- 设计文档内 [推荐整体架构](design/多智能体目标工作流设计.md#三推荐整体架构对齐你的-15) — 编排层（LangGraph）与执行层（OpenClaw/acpx）、简化架构图。
-- [特性 F7.x：架构与集成](../FEATURES.md#七架构与集成) — 编排与执行分离、节点可扩展、OpenClaw/ClawHub/acpx 集成、「仅 OpenClaw」模式说明。
-
-### 实现与选型
-
-- [Zeroclaw Provider 实现分析](zeroclaw-provider-analysis.md) — zeroclaw 中 provider 抽象、工厂、OpenAI 兼容层、Router/Reliable 及对 Go 实现的参考。
-- [Provider 迁移设计](design/provider-migration-design.md) — 从 zeroclaw 完整迁移的 provider 功能设计：类型、接口、OpenAI 兼容、工厂与凭证、Router/Reliable、包布局与迁移清单。
-
-### 文档维护与 GitHub 展示
-
-- 本页下方 [文档维护说明](#文档维护说明--github-展示) — 文档放在哪、命名与层级、与 Git/Issue/Project 的配合、可选展示增强（GitHub Pages、MkDocs 等）。
+[Design doc](design/多智能体目标工作流设计.md) · [Features](../FEATURES.md) · [Doc maintenance](#doc-maintenance--github)
 
 ---
 
-## 参考（外部）
+## Docs by purpose
 
-- [OpenClaw 文档](https://docs.openclaw.ai/) — Gateway、Skill、Session Tools 等。
-- [OpenClaw Session Tools](https://docs.openclaw.ai/concepts/session-tool) — `sessions_send`、`sessions_spawn`。
-- [OpenClaw GitHub README](https://github.com/openclaw/openclaw) — 项目结构与文档组织可作参考。
+### Getting started
+
+- [Multi-agent goal workflow design](design/多智能体目标工作流设计.md) — Five phases, mapping to existing frameworks, recommended architecture, OpenClaw comparison.
+- [Features (FEATURES)](../FEATURES.md) — Deliverables with IDs, descriptions, acceptance criteria, for Issue/Project.
+
+### Design
+
+- [Multi-agent goal workflow design](design/多智能体目标工作流设计.md) — Full flow: publish → plan → execute → Skill/Tool generation and progress/cancel → summarize.
+- [Phases and framework mapping](design/多智能体目标工作流设计.md#四各阶段与框架对照小结) — Quick reference table.
+- [OpenClaw-only feasibility](design/多智能体目标工作流设计.md#五仅用-openclaw-能否直接实现) — Capability comparison and conclusion.
+
+### Architecture and integration
+
+- [Recommended architecture](design/多智能体目标工作流设计.md#三推荐整体架构对齐你的-15) — Orchestration (LangGraph) and execution (OpenClaw/acpx).
+- [F7.x: Architecture and integration](../FEATURES.md#七架构与集成) — Separation of concerns, OpenClaw/ClawHub/acpx, “OpenClaw only” mode.
+
+### Implementation and selection
+
+- [Zeroclaw provider analysis](zeroclaw-provider-analysis.md) — Provider abstraction, factory, OpenAI-compatible layer, Router/Reliable, reference for Go.
+- [Provider migration design](design/provider-migration-design.md) — Full migration from Zeroclaw: types, interfaces, OpenAI compat, factory and credentials, Router/Reliable, layout and checklist.
+
+### Doc maintenance
+
+- [Doc maintenance](#doc-maintenance--github) — Where docs live, naming, Git/Issue/Project, optional GitHub Pages/MkDocs.
 
 ---
 
-## 文档维护说明 — GitHub 展示
+## External references
 
-以下说明在 GitHub 上如何组织与展示文档，以及如何与 Git 工作流、Issue/Project 配合。
+- **Zeroclaw:** [Zeroclaw GitHub](https://github.com/zeroclaw-labs/zeroclaw) · [Zeroclaw 中文](https://zeroclaws.io/zh/) — Provider, Agent, Skills, Tools, Runtime, Gateway, Channels (aligned with pathfinder).
+- [OpenClaw docs](https://docs.openclaw.ai/) — Gateway, Skill, Session Tools.
+- [OpenClaw Session Tools](https://docs.openclaw.ai/concepts/session-tool) — `sessions_send`, `sessions_spawn`.
+- [OpenClaw GitHub README](https://github.com/openclaw/openclaw) — Project structure and doc layout.
 
-### 一、文档应放在哪些位置
+---
 
-- **仓库根目录**：`README.md`（项目简介与文档入口）、`FEATURES.md`（特性列表）。
-- **`docs/`**：本索引 `docs/README.md`；设计类放入 `docs/design/`（如 `多智能体目标工作流设计.md`、可选 `architecture-overview.md`、`phases-summary.md`）。
-- **GitHub Wiki**（可选）：用户向/操作向内容；设计文档与特性列表建议保留在主仓便于版本与 Code Review。
+## Doc maintenance — GitHub
 
-根目录 `README.md` 中建议有「文档」小节，链接到本页、设计文档与 `FEATURES.md`。
+How to organize and present docs on GitHub and how they fit with Git, Issue, and Project.
 
-### 二、文件命名与层级
+### Where to put docs
 
-| 建议路径 | 内容 |
-|----------|------|
-| `docs/design/多智能体目标工作流设计.md` | 设计全文。 |
-| `docs/design/architecture-overview.md` | 简化架构图与推荐技术栈（可选）。 |
-| `docs/design/phases-summary.md` | 各阶段与框架对照表格（可选）。 |
-| `FEATURES.md`（根目录） | 特性列表，ID 如 F2.1。 |
+- **Repo root:** `README.md` (project intro and doc entry), `FEATURES.md` (feature list).
+- **`docs/`:** This index `docs/README.md`; design docs in `docs/design/` (e.g. workflow design, optional `architecture-overview.md`, `phases-summary.md`).
+- **GitHub Wiki** (optional): User-facing how-to; keep design and FEATURES in the repo for versioning and review.
 
-### 三、与 Git 工作流的配合
+The root `README.md` should have a “Docs” section linking to this index, the design doc, and `FEATURES.md`.
 
-- **分支**：文档随 `main` 或功能分支维护；大改可在 `feat/xxx` 上文档与代码一起 PR。
-- **版本与 Tag**：按版本打 tag 时打在包含当前设计+特性的提交上；Release Notes 中可写「本版本实现的特性 ID」。
-- **Issue/Project**：Issue 描述中引用 `FEATURES.md` 的 Fx.x；Project 列对应需求/进行中/已完成；可选 Issue 模板字段「对应特性 ID」。
+### Naming and layout
 
-### 四、可选的展示增强
+| Path | Content |
+|------|---------|
+| `docs/design/多智能体目标工作流设计.md` | Full design. |
+| `docs/design/architecture-overview.md` | Simplified architecture and stack (optional). |
+| `docs/design/phases-summary.md` | Phase vs framework table (optional). |
+| `FEATURES.md` (root) | Feature list, IDs e.g. F2.1. |
 
-- **GitHub Pages**：将 `docs/` 或指定目录发布为静态站。
-- **MkDocs / Diátaxis**：用 `docs/` 作源目录，多级导航与搜索；可部署到 GitHub Pages。
-- **架构图**：PNG/SVG 放 `docs/design/assets/`，在文档中相对路径引用；图源（Mermaid、draw.io）建议进仓。
+### Git workflow
 
-按上述方式组织后，在 GitHub 上可通过「仓库 + docs/ + README 索引」直接阅读，并与特性列表、Issue、版本管理对齐。
+- **Branches:** Docs follow `main` or feature branches; large doc changes can go in a `feat/xxx` PR with code.
+- **Tags:** Tag releases on commits that include current design and features; release notes can list implemented feature IDs.
+- **Issue/Project:** Reference `FEATURES.md` IDs (Fx.x) in issues; Project columns for backlog/in progress/done; optional “Feature ID” in issue template.
+
+### Optional enhancements
+
+- **GitHub Pages:** Publish `docs/` or a chosen directory as a static site.
+- **MkDocs / Diátaxis:** Use `docs/` as source, with navigation and search; deploy to GitHub Pages.
+- **Diagrams:** Put PNG/SVG in `docs/design/assets/` and reference from docs; keep sources (Mermaid, draw.io) in the repo.
+
+With this layout, docs are readable on GitHub via the repo + docs/ + this index, and stay aligned with features, issues, and releases.
