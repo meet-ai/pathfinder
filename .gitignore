@@ -40,6 +40,9 @@ build/
 .cursor/
 zeroclaw/
 shawkeye/
+dev/
+# Go build output (pathfinder binary at repo root)
+/pathfinder
 
 # Misc
 *.bak
