@@ -26,23 +26,23 @@
 
 ## 1.2 参与者
 
-| 角色 | 说明 |
-|------|------|
-| **用户** | 通过 CLI（如 `pathfinder -m "目标"`）、API 或消息渠道（Chat/Slack/WebChat）提交目标；查看进度、取消任务、查看结果。 |
-| **编排层** | 规划、分支、监督、总结；维护 state；不直接执行子任务。 |
-| **执行层** | 按 state 派发子任务到 agent（openclaw:\<id\>/acpx）；写回执行结果。 |
-| **Agent** | 执行具体子任务；可具备 Skill/Tool；由 Gateway/ClawHub 等发现。 |
+| 角色       | 说明                                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| **用户**   | 通过 CLI（如 `pathfinder -m "目标"`）、API 或消息渠道（Chat/Slack/WebChat）提交目标；查看进度、取消任务、查看结果。 |
+| **编排层** | 规划、分支、监督、总结；维护 state；不直接执行子任务。                                                              |
+| **执行层** | 按 state 派发子任务到 agent（openclaw:\<id\>/acpx）；写回执行结果。                                                 |
+| **Agent**  | 执行具体子任务；可具备 Skill/Tool；由 Gateway/ClawHub 等发现。                                                      |
 
 ## 1.3 业务流程映射
 
-| 阶段 | 业务内容 | 对应特性 |
-|------|----------|----------|
-| 1. 发布任务 | 提交高层目标，获得 RunId/StreamHandle；可选参数（超时、优先级、AgentPool）。 | F1.1–F1.3 |
-| 2. 规划与探索 | 任务分解 → 子任务列表；依赖分析 → DAG/顺序；分派建议 agent；结果写 state。 | F2.1–F2.4 |
-| 3. 执行与派发 | 按依赖串行/并行执行；派发到对应 agent；结果写回 state。 | F3.1–F3.4 |
-| 4. Skill/Tool 按需生成 | 检测缺失 → 路由生成；生成并安装/注册；重新调度执行。 | F4.1–F4.6 |
-| 5. 进度与中止 | 任务级进度与持久化；流式/进度事件；超时/用户取消/失败策略 → 中止与清理。 | F5.1–F5.5 |
-| 6. 总结与沉淀 | 汇总子任务结果；可选写回知识库；可选复盘；新 Skill/Tool 登记到目录/ClawHub。 | F6.1–F6.4 |
+| 阶段                   | 业务内容                                                                     | 对应特性  |
+| ---------------------- | ---------------------------------------------------------------------------- | --------- |
+| 1. 发布任务            | 提交高层目标，获得 RunId/StreamHandle；可选参数（超时、优先级、AgentPool）。 | F1.1–F1.3 |
+| 2. 规划与探索          | 任务分解 → 子任务列表；依赖分析 → DAG/顺序；分派建议 agent；结果写 state。   | F2.1–F2.4 |
+| 3. 执行与派发          | 按依赖串行/并行执行；派发到对应 agent；结果写回 state。                      | F3.1–F3.4 |
+| 4. Skill/Tool 按需生成 | 检测缺失 → 路由生成；生成并安装/注册；重新调度执行。                         | F4.1–F4.6 |
+| 5. 进度与中止          | 任务级进度与持久化；流式/进度事件；超时/用户取消/失败策略 → 中止与清理。     | F5.1–F5.5 |
+| 6. 总结与沉淀          | 汇总子任务结果；可选写回知识库；可选复盘；新 Skill/Tool 登记到目录/ClawHub。 | F6.1–F6.4 |
 
 ---
 
@@ -50,25 +50,25 @@
 
 ## 2.1 用例脑暴（用例卡片）
 
-| 角色 | 操作 | 目的 | 用例名 | 类型 | 优先级 |
-|------|------|------|--------|------|--------|
-| 用户/系统 | 提交高层目标 | 进入工作流并获 RunId/StreamHandle | SubmitGoalUseCase | [O] | P0 |
-| 用户/系统 | 通过消息渠道提交 | 从 Chat/Slack 等触发任务 | SubmitGoalViaChannelUseCase | [O] | P1 |
-| 编排层 | 分解目标、分析依赖、分派 agent | 产出可执行计划 | PlanGoalUseCase | [C] | P0 |
-| 编排层 | 按计划串行/并行执行子任务 | 完成子任务并写回结果 | ExecutePlanUseCase | [O] | P0 |
-| 执行层 | 派发子任务到指定 agent | 由 agent 执行并返回结果 | DispatchTaskToAgentUseCase | [C] | P0 |
-| 编排层 | 检测缺 Skill 并路由生成 | 不卡死、进入生成分支 | DetectMissingSkillAndRouteUseCase | [C] | P1 |
-| 编排层 | 生成 Skill 包并安装到 agent | 目标 agent 可见可用 | GenerateAndInstallSkillUseCase | [C] | P1 |
-| 编排层 | 检测缺 Tool 并路由生成 | 进入 Tool 生成分支 | DetectMissingToolAndRouteUseCase | [C] | P1 |
-| 编排层 | 生成 Tool 并注册绑定 agent | 下一轮执行可用 | GenerateAndRegisterToolUseCase | [C] | P1 |
-| 编排层 | 维护任务进度、checkpoint、恢复 | 监督与总结可读 | MaintainTaskProgressUseCase | [C] | P0 |
-| 用户/监督者 | 取消 run | 走清理与总结 | CancelRunUseCase | [C] | P0 |
-| 编排层 | 超时/失败策略检测并中止 | 进入中止与总结 | AbortRunOnConditionUseCase | [C] | P0 |
-| 编排层 | 汇总子任务结果、生成报告 | 用户/下游获得产出 | SummarizeRunUseCase | [C] | P0 |
-| 编排层 | 登记新 Skill/Tool 到目录 | 其他 run/agent 可复用 | RegisterSkillOrToolToCatalogUseCase | [C] | P2 |
-| 用户/系统 | 查询可用 agent 列表 | 规划与派发时选择 agent | ListAgentsUseCase | [Q] | P0 |
-| 用户/系统 | 查询某 agent 是否具备某 Skill/Tool | 检测缺失、生成前校验 | CheckAgentCapabilityUseCase | [Q] | P1 |
-| 用户/系统 | 订阅 run 进度与流式输出 | 实时查看步骤、agent、进度% | StreamRunProgressUseCase | [Q] | P0 |
+| 角色        | 操作                               | 目的                              | 用例名                              | 类型 | 优先级 |
+| ----------- | ---------------------------------- | --------------------------------- | ----------------------------------- | ---- | ------ |
+| 用户/系统   | 提交高层目标                       | 进入工作流并获 RunId/StreamHandle | SubmitGoalUseCase                   | [O]  | P0     |
+| 用户/系统   | 通过消息渠道提交                   | 从 Chat/Slack 等触发任务          | SubmitGoalViaChannelUseCase         | [O]  | P1     |
+| 编排层      | 分解目标、分析依赖、分派 agent     | 产出可执行计划                    | PlanGoalUseCase                     | [C]  | P0     |
+| 编排层      | 按计划串行/并行执行子任务          | 完成子任务并写回结果              | ExecutePlanUseCase                  | [O]  | P0     |
+| 执行层      | 派发子任务到指定 agent             | 由 agent 执行并返回结果           | DispatchTaskToAgentUseCase          | [C]  | P0     |
+| 编排层      | 检测缺 Skill 并路由生成            | 不卡死、进入生成分支              | DetectMissingSkillAndRouteUseCase   | [C]  | P1     |
+| 编排层      | 生成 Skill 包并安装到 agent        | 目标 agent 可见可用               | GenerateAndInstallSkillUseCase      | [C]  | P1     |
+| 编排层      | 检测缺 Tool 并路由生成             | 进入 Tool 生成分支                | DetectMissingToolAndRouteUseCase    | [C]  | P1     |
+| 编排层      | 生成 Tool 并注册绑定 agent         | 下一轮执行可用                    | GenerateAndRegisterToolUseCase      | [C]  | P1     |
+| 编排层      | 维护任务进度、checkpoint、恢复     | 监督与总结可读                    | MaintainTaskProgressUseCase         | [C]  | P0     |
+| 用户/监督者 | 取消 run                           | 走清理与总结                      | CancelRunUseCase                    | [C]  | P0     |
+| 编排层      | 超时/失败策略检测并中止            | 进入中止与总结                    | AbortRunOnConditionUseCase          | [C]  | P0     |
+| 编排层      | 汇总子任务结果、生成报告           | 用户/下游获得产出                 | SummarizeRunUseCase                 | [C]  | P0     |
+| 编排层      | 登记新 Skill/Tool 到目录           | 其他 run/agent 可复用             | RegisterSkillOrToolToCatalogUseCase | [C]  | P2     |
+| 用户/系统   | 查询可用 agent 列表                | 规划与派发时选择 agent            | ListAgentsUseCase                   | [Q]  | P0     |
+| 用户/系统   | 查询某 agent 是否具备某 Skill/Tool | 检测缺失、生成前校验              | CheckAgentCapabilityUseCase         | [Q]  | P1     |
+| 用户/系统   | 订阅 run 进度与流式输出            | 实时查看步骤、agent、进度%        | StreamRunProgressUseCase            | [Q]  | P0     |
 
 ## 2.2 用例标准化（按类型分组）
 
@@ -78,14 +78,14 @@
 
 ## 2.3 用例分组（按业务域）
 
-| 业务域 | 职责 | 包含用例 |
-|--------|------|----------|
-| **能力目录** | 谁可用、会什么；发现与登记 | ListAgentsUseCase、CheckAgentCapabilityUseCase、RegisterSkillOrToolToCatalogUseCase（登记） |
-| **规划契约** | 计划结构、校验、state 约定 | PlanGoalUseCase（产出）、ExecutePlanUseCase（消费计划）中涉及的结构与校验 |
-| **运行时** | run 生命周期、派发、流式、取消 | SubmitGoalUseCase、SubmitGoalViaChannelUseCase、DispatchTaskToAgentUseCase、CancelRunUseCase、StreamRunProgressUseCase |
-| **执行状态** | 任务进度、checkpoint、持久化 | MaintainTaskProgressUseCase、AbortRunOnConditionUseCase（读进度/失败次数） |
-| **能力生成** | Skill/Tool 缺失检测与生成安装 | DetectMissingSkillAndRouteUseCase、GenerateAndInstallSkillUseCase、DetectMissingToolAndRouteUseCase、GenerateAndRegisterToolUseCase |
-| **工作流编排** | 端到端编排 | ExecutePlanUseCase、SummarizeRunUseCase（编排上述各域） |
+| 业务域         | 职责                           | 包含用例                                                                                                                            |
+| -------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **能力目录**   | 谁可用、会什么；发现与登记     | ListAgentsUseCase、CheckAgentCapabilityUseCase、RegisterSkillOrToolToCatalogUseCase（登记）                                         |
+| **规划契约**   | 计划结构、校验、state 约定     | PlanGoalUseCase（产出）、ExecutePlanUseCase（消费计划）中涉及的结构与校验                                                           |
+| **运行时**     | run 生命周期、派发、流式、取消 | SubmitGoalUseCase、SubmitGoalViaChannelUseCase、DispatchTaskToAgentUseCase、CancelRunUseCase、StreamRunProgressUseCase              |
+| **执行状态**   | 任务进度、checkpoint、持久化   | MaintainTaskProgressUseCase、AbortRunOnConditionUseCase（读进度/失败次数）                                                          |
+| **能力生成**   | Skill/Tool 缺失检测与生成安装  | DetectMissingSkillAndRouteUseCase、GenerateAndInstallSkillUseCase、DetectMissingToolAndRouteUseCase、GenerateAndRegisterToolUseCase |
+| **工作流编排** | 端到端编排                     | ExecutePlanUseCase、SummarizeRunUseCase（编排上述各域）                                                                             |
 
 ## 2.4 用例依赖关系（编排用例分解）
 
@@ -110,16 +110,20 @@ ExecutePlanUseCase [O]
 
 ## 3.1 限界上下文列表
 
-| 上下文 | 职责 | 核心领域对象 | 用例示例 |
-|--------|------|--------------|----------|
-| **CapabilityCatalogContext**（能力目录） | 执行体与能力发现、检索、登记 | Agent、Skill、Tool、AgentPool | ListAgents、CheckAgentCapability、RegisterSkillOrToolToCatalog |
-| **PlanningContext**（规划契约） | 计划结构、校验、与 state 约定 | Plan、SubTask、Dependency、SuggestedAgent | PlanGoal（产出）、ExecutePlan（消费） |
-| **RuntimeContext**（运行时） | run 生命周期、派发、流式、取消 | Run、Dispatch、StreamHandle | SubmitGoal、DispatchTaskToAgent、CancelRun、StreamRunProgress |
-| **ExecutionStateContext**（执行状态） | 任务进度、checkpoint、恢复 | RunProgress、TaskProgress、Checkpoint | MaintainTaskProgress、AbortRunOnCondition |
-| **CapabilityGenerationContext**（能力生成） | Skill/Tool 缺失检测、生成、安装/注册 | SkillPackage、ToolSpec、GenerationRequest | DetectMissingSkill/Tool、GenerateAndInstallSkill、GenerateAndRegisterTool |
-| **WorkflowOrchestrationContext**（工作流编排） | 端到端编排、总结 | Run、Plan、Summary | ExecutePlan、SummarizeRun |
+| 上下文                                         | 职责                                 | 核心领域对象                              | 用例示例                                                                  |
+| ---------------------------------------------- | ------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------- |
+| **CapabilityCatalogContext**（能力目录）       | 执行体与能力发现、检索、登记         | Agent、Skill、Tool、AgentPool             | ListAgents、CheckAgentCapability、RegisterSkillOrToolToCatalog            |
+| **PlanningContext**（规划契约）                | 计划结构、校验、与 state 约定        | Plan、SubTask、Dependency、SuggestedAgent | PlanGoal（产出）、ExecutePlan（消费）                                     |
+| **RuntimeContext**（运行时）                   | run 生命周期、派发、流式、取消       | Run、Dispatch、StreamHandle               | SubmitGoal、DispatchTaskToAgent、CancelRun、StreamRunProgress             |
+| **ExecutionStateContext**（执行状态）          | 任务进度、checkpoint、恢复           | RunProgress、TaskProgress、Checkpoint     | MaintainTaskProgress、AbortRunOnCondition                                 |
+| **CapabilityGenerationContext**（能力生成）    | Skill/Tool 缺失检测、生成、安装/注册 | SkillPackage、ToolSpec、GenerationRequest | DetectMissingSkill/Tool、GenerateAndInstallSkill、GenerateAndRegisterTool |
+| **WorkflowOrchestrationContext**（工作流编排） | 端到端编排、总结                     | Run、Plan、Summary                        | ExecutePlan、SummarizeRun                                                 |
 
 ## 3.2 上下文映射关系
+
+> **什么是上下文映射（Context Map）？**  
+> 在 DDD 里，限界上下文是「一块一块的业务边界」，**上下文映射图**就是把这些上下文之间的关系画出来：谁是上游、谁是下游、谁依赖谁、有没有共享内核（Shared Kernel）等。  
+> 这个小节的目标：**让人一眼看出「哪个上下文负责什么，调用链大致怎么走」**，是后面目录设计和用例编排的战略层输入。
 
 ### Customer-Supplier（下游依赖上游）
 
@@ -238,7 +242,7 @@ pathfinder/
 **与 zeroclaw 术语对应**：agent、skills、tools、runtime、gateway、channels、skillforge、provider（pathfinder 用单数 provider）、memory、config。progress、planning、orchestration 为 pathfinder 工作流特有。支撑模块 TUI/CLI 在 cmd/；Observability、Auth、Health、Cost 在 internal 下独立包或合并到 gateway/config。
 
 **目录优化要点**（对齐 ddd-cleancode-dir）：  
-- **入口与编排分离**：入口 = cmd/pathfinder（读参数、调 app）与 cmd/tui；编排 = orchestration（串起 planning → agent → progress → …），app 仅做「加载 config → 调 orchestration → 可选拉 TUI」，不承载用例细节。  
+- **入口与编排分离**：入口 = cmd/pathfinder（读参数、调 app，可选 -tui 拉 TUI）；编排 = orchestration（串起 planning → agent → progress → …），app 仅做「加载 config → 调 orchestration → 返回 RunId」，不承载用例细节。  
 - **变化点独立**：会换实现（provider、channels、持久化）、被多处用（config、progress、gateway）、或即将变重（agent）的包单独保留；observability/auth/health/cost 在代码量小时可合并到 gateway 或 config，待需要再拆。  
 - **大包分子包**：agent 变重时按子职责拆为 agent/loop、agent/context、agent/tools 等，子包名仍用领域概念，不按「层」拆。  
 - **实现归属**：各能力包内实现本包 Port（如 provider 下 openai/compatible）；跨多包的存储/客户端放 infra；编排处（app 或 gateway 组装）new 实现并注入，不散落 import 具体实现。
@@ -252,7 +256,7 @@ pathfinder/
 **谁调谁**（单向、无循环）：
 
 ```
-cmd/pathfinder, cmd/tui
+cmd/pathfinder（-tui 启动 internal/tui）
     → app
 app
     → config, orchestration
@@ -277,23 +281,23 @@ channels
 
 ### 4.2.2 各包 provides / needs 摘要
 
-| 包 | provides（对外接口） | needs（依赖外部，由 infra 或他包实现） |
-|----|----------------------|----------------------------------------|
-| **config** | Load(), 路径解析 | 无（读文件/环境变量可包内实现） |
-| **provider** | Provider 接口、Factory | 无或 HTTP 客户端（可包内） |
-| **app** | Run(message) | config.Load, orchestration.SubmitGoal / 可选 TUI 启动 |
-| **orchestration** | SubmitGoal, ExecutePlan, SummarizeRun, CancelRun | planning, agent, progress, gateway(StreamPublisher), channels(Deliver), skillforge, provider, memory, config |
-| **planning** | Plan 结构、Validate、产出 SubTask/Dependency | Planner（由 infra 实现） |
-| **agent** | 派发、循环、执行体发现 | Provider, Skills, Tools, TaskProgressRepository, planning(读 Plan), runtime |
-| **progress** | WriteProgress, ReadProgress, Checkpoint, Restore | TaskProgressRepository（由 infra 实现） |
-| **gateway** | HTTP/SSE/WS 入口、Stream(RunId)、Cancel(RunId) | TaskProgressRepository, orchestration.Cancel, config |
-| **channels** | SendMessage, Deliver | 各 Channel 实现、config |
-| **skillforge** | Scout, Evaluate, Integrate | SkillToolRegistry(skills 登记), config |
-| **skills** | 加载、审计、List | 文件系统/ClawHub（needs 或包内） |
-| **tools** | Tool 规范、执行 | 无或由调用方注入 |
-| **runtime** | 执行环境（native/docker） | 无或由 infra 实现具体运行时 |
-| **memory** | 记忆/上下文存储 | 存储后端（infra） |
-| **infra** | 无（仅实现） | 实现各包 needs：RunRepository、PlanRepository、TaskProgressRepository、AgentDiscovery、Dispatcher、SkillToolRegistry、Planner、StreamPublisher 等 |
+| 包                | provides（对外接口）                             | needs（依赖外部，由 infra 或他包实现）                                                                                                            |
+| ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **config**        | Load(), 路径解析                                 | 无（读文件/环境变量可包内实现）                                                                                                                   |
+| **provider**      | Provider 接口、Factory                           | 无或 HTTP 客户端（可包内）                                                                                                                        |
+| **app**           | Run(message)                                     | config.Load, orchestration.SubmitGoal / 可选 TUI 启动                                                                                             |
+| **orchestration** | SubmitGoal, ExecutePlan, SummarizeRun, CancelRun | planning, agent, progress, gateway(StreamPublisher), channels(Deliver), skillforge, provider, memory, config                                      |
+| **planning**      | Plan 结构、Validate、产出 SubTask/Dependency     | Planner（由 infra 实现）                                                                                                                          |
+| **agent**         | 派发、循环、执行体发现                           | Provider, Skills, Tools, TaskProgressRepository, planning(读 Plan), runtime                                                                       |
+| **progress**      | WriteProgress, ReadProgress, Checkpoint, Restore | TaskProgressRepository（由 infra 实现）                                                                                                           |
+| **gateway**       | HTTP/SSE/WS 入口、Stream(RunId)、Cancel(RunId)   | TaskProgressRepository, orchestration.Cancel, config                                                                                              |
+| **channels**      | SendMessage, Deliver                             | 各 Channel 实现、config                                                                                                                           |
+| **skillforge**    | Scout, Evaluate, Integrate                       | SkillToolRegistry(skills 登记), config                                                                                                            |
+| **skills**        | 加载、审计、List                                 | 文件系统/ClawHub（needs 或包内）                                                                                                                  |
+| **tools**         | Tool 规范、执行                                  | 无或由调用方注入                                                                                                                                  |
+| **runtime**       | 执行环境（native/docker）                        | 无或由 infra 实现具体运行时                                                                                                                       |
+| **memory**        | 记忆/上下文存储                                  | 存储后端（infra）                                                                                                                                 |
+| **infra**         | 无（仅实现）                                     | 实现各包 needs：RunRepository、PlanRepository、TaskProgressRepository、AgentDiscovery、Dispatcher、SkillToolRegistry、Planner、StreamPublisher 等 |
 
 - **编排处**：app 或 gateway 的「组装」只依赖各包 **provides（接口）**，具体实现（如某 Provider 实现、某 Channel 实现）在组装处构造并注入，不散落各处 import 实现类。
 
@@ -309,28 +313,28 @@ channels
 
 支撑模块不承载核心编排/规划/执行逻辑，但为使用流程、运维与可观测性提供能力；实现时可单独目录或归入现有包。
 
-| 支撑模块 | 职责 | 依赖/对接 | zeroclaw 参考 |
-|----------|------|-----------|---------------|
-| **TUI** | 本地终端 UI：绑定 RunId，订阅进度与流式输出；展示当前阶段（规划/执行/总结）、当前步骤与 Agent、子任务进度（如 3/7）、流式日志；支持取消与查看最终结果。 | gateway（SSE/流式）、progress（进度）、orchestration（取消） | — |
-| **CLI** | 命令行入口：`pathfinder -m "目标"` / `run --message "..."` 提交目标，可选启动 TUI。 | orchestration（SubmitGoal）、TUI（可选） | channels/cli |
-| **Observability** | 日志、指标、分布式追踪；便于排障与成本/延迟分析。 | 各包埋点、config | observability/ |
-| **Auth** | API、渠道、Gateway 鉴权与身份解析。 | gateway、channels、config | auth/ |
-| **Health** | 健康检查端点（依赖就绪、存储连通等）。 | config、persistence、providers | health/ |
-| **Cost** | 用量与成本追踪（token、调用次数、按 provider 汇总）。 | providers、orchestration/agent 调用链 | cost/ |
-| **Delivery / Reply** | 结果交付：回复到指定 channel、webhook 回调、写知识库等。 | orchestration（总结产出）、channels、config | channels 的 deliver/reply 能力 |
-| **Config** | 配置加载、校验、热更新（已列入目录）。 | — | config/ |
+| 支撑模块             | 职责                                                                                                                                                    | 依赖/对接                                                    | zeroclaw 参考                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------ |
+| **TUI**              | 本地终端 UI：绑定 RunId，订阅进度与流式输出；展示当前阶段（规划/执行/总结）、当前步骤与 Agent、子任务进度（如 3/7）、流式日志；支持取消与查看最终结果。 | gateway（SSE/流式）、progress（进度）、orchestration（取消） | —                              |
+| **CLI**              | 命令行入口：`pathfinder -m "目标"` / `run --message "..."` 提交目标，可选启动 TUI。                                                                     | orchestration（SubmitGoal）、TUI（可选）                     | channels/cli                   |
+| **Observability**    | 日志、指标、分布式追踪；便于排障与成本/延迟分析。                                                                                                       | 各包埋点、config                                             | observability/                 |
+| **Auth**             | API、渠道、Gateway 鉴权与身份解析。                                                                                                                     | gateway、channels、config                                    | auth/                          |
+| **Health**           | 健康检查端点（依赖就绪、存储连通等）。                                                                                                                  | config、persistence、providers                               | health/                        |
+| **Cost**             | 用量与成本追踪（token、调用次数、按 provider 汇总）。                                                                                                   | providers、orchestration/agent 调用链                        | cost/                          |
+| **Delivery / Reply** | 结果交付：回复到指定 channel、webhook 回调、写知识库等。                                                                                                | orchestration（总结产出）、channels、config                  | channels 的 deliver/reply 能力 |
+| **Config**           | 配置加载、校验、热更新（已列入目录）。                                                                                                                  | —                                                            | config/                        |
 
-**说明**：TUI、CLI 对应 FEATURES 使用流程「直接发布 + TUI」，落地于 `cmd/tui`、`cmd/pathfinder`；Observability、Auth、Health、Cost、Delivery 在 internal 下独立包或合并到 gateway/config，pathfinder 可按需复用 zeroclaw 或实现简化版。
+**说明**：TUI、CLI 对应 FEATURES 使用流程「直接发布 + TUI」，落地于 pathfinder -tui（internal/tui）、cmd/pathfinder；Observability、Auth、Health、Cost、Delivery 在 internal 下独立包或合并到 gateway/config，pathfinder 可按需复用 zeroclaw 或实现简化版。
 
 ### 4.4 配置精简（避免过度设计）
 
 pathfinder 当前为单用户目标工作流编排，配置仅保留工作流所需项，以下视为过度设计已移除或不做：
 
-| 移除/不做 | 原因 |
-|-----------|------|
-| **active_workspace.toml** | 多 workspace 持久化切换；单用户用 PATHFINDER_CONFIG_DIR / PATHFINDER_WORKSPACE 或默认 ~/.pathfinder 即可。 |
-| **config.toml 中的 api_key / api_url** | 隐私变量统一用 .env，不落盘 config.toml；APIKey/APIURL 仅从环境变量（含 .env）注入。 |
-| **extra_headers** | 当前无按厂商自定义 HTTP 头需求；provider 层可选支持，config 不承载。 |
+| 移除/不做                              | 原因                                                                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **active_workspace.toml**              | 多 workspace 持久化切换；单用户用 PATHFINDER_CONFIG_DIR / PATHFINDER_WORKSPACE 或默认 ~/.pathfinder 即可。 |
+| **config.toml 中的 api_key / api_url** | 隐私变量统一用 .env，不落盘 config.toml；APIKey/APIURL 仅从环境变量（含 .env）注入。                       |
+| **extra_headers**                      | 当前无按厂商自定义 HTTP 头需求；provider 层可选支持，config 不承载。                                       |
 
 保留：路径解析（PATHFINDER_CONFIG_DIR > PATHFINDER_WORKSPACE > ~/.pathfinder）、default_provider / default_model / default_temperature、provider_timeout_secs、.env 加载。
 
@@ -376,12 +380,12 @@ pathfinder 当前为单用户目标工作流编排，配置仅保留工作流所
 
 ## 5.3 聚合设计（事务边界）
 
-| 聚合根 | 边界内对象 | 职责概要 | 关键不变条件 |
-|--------|------------|----------|--------------|
-| **Run** | Run, RunProgress 引用 | run 生命周期、取消标志、deadline | 取消后不可再派发新任务；超时后不可再执行新子任务 |
-| **Plan** | Plan, SubTask[], Dependency | 计划结构、校验 | 子任务 TaskId 唯一；依赖引用同一 Plan 内 TaskId |
-| **TaskProgress** | TaskProgress（按 RunId+TaskId） | 单任务进度、结果 | Status 仅允许约定转换（待办→进行中→完成/失败） |
-| **Agent** | Agent, Skill[], Tool[]（目录视角） | 能力目录内「谁有什么」 | 仅通过登记/安装更新能力，不在此聚合内执行 |
+| 聚合根           | 边界内对象                         | 职责概要                         | 关键不变条件                                     |
+| ---------------- | ---------------------------------- | -------------------------------- | ------------------------------------------------ |
+| **Run**          | Run, RunProgress 引用              | run 生命周期、取消标志、deadline | 取消后不可再派发新任务；超时后不可再执行新子任务 |
+| **Plan**         | Plan, SubTask[], Dependency        | 计划结构、校验                   | 子任务 TaskId 唯一；依赖引用同一 Plan 内 TaskId  |
+| **TaskProgress** | TaskProgress（按 RunId+TaskId）    | 单任务进度、结果                 | Status 仅允许约定转换（待办→进行中→完成/失败）   |
+| **Agent**        | Agent, Skill[], Tool[]（目录视角） | 能力目录内「谁有什么」           | 仅通过登记/安装更新能力，不在此聚合内执行        |
 
 - **关联**：Run 引用 Plan（by ref 或 snapshot）；Run 与 TaskProgress 按 RunId 关联；Dispatcher 通过 AgentId 引用 CapabilityCatalogContext 的 Agent。
 
@@ -407,21 +411,28 @@ pathfinder 当前为单用户目标工作流编排，配置仅保留工作流所
 
 ## 6.1 设计矩阵（用例 → Command/Query → 应用服务方法 → DTO/事件）
 
-| 用例 | 命令/查询对象 | 应用服务与方法 | 返回 DTO / 事件 |
-|------|----------------|----------------|-----------------|
-| SubmitGoalUseCase | SubmitGoalCommand | WorkflowOrchestrationApplicationService.SubmitGoal() | RunDTO（RunId, StreamHandle）、RunCreatedEvent |
-| SubmitGoalViaChannelUseCase | SubmitGoalViaChannelCommand | WorkflowOrchestrationApplicationService.SubmitGoalViaChannel() | RunDTO、RunCreatedEvent |
-| PlanGoalUseCase | PlanGoalCommand | PlanningApplicationService.PlanGoal() | PlanDTO、PlanProducedEvent |
-| ExecutePlanUseCase | （内部编排） | WorkflowOrchestrationApplicationService.ExecutePlan() | RunSummaryDTO、RunCompletedEvent / RunAbortedEvent |
-| DispatchTaskToAgentUseCase | DispatchTaskCommand | RuntimeApplicationService.DispatchTask() | DispatchResultDTO |
-| MaintainTaskProgressUseCase | UpdateTaskProgressCommand | ExecutionStateApplicationService.UpdateTaskProgress() | — |
-| CancelRunUseCase | CancelRunCommand | RuntimeApplicationService.CancelRun() | —、RunCancelledEvent |
-| AbortRunOnConditionUseCase | （监督节点调用） | ExecutionStateApplicationService.EvaluateAbortCondition() | shouldAbort + AbortReason |
-| SummarizeRunUseCase | SummarizeRunCommand | WorkflowOrchestrationApplicationService.SummarizeRun() | SummaryDTO |
-| RegisterSkillOrToolToCatalogUseCase | RegisterSkillOrToolCommand | CapabilityCatalogApplicationService.RegisterSkillOrTool() | — |
-| ListAgentsUseCase | ListAgentsQuery | CapabilityCatalogQueryService.ListAgents() | AgentListDTO |
-| CheckAgentCapabilityUseCase | CheckAgentCapabilityQuery | CapabilityCatalogQueryService.CheckAgentCapability() | CapabilityCheckDTO |
-| StreamRunProgressUseCase | StreamRunProgressQuery | RuntimeQueryService.StreamRunProgress() | 流式事件（SSE/WS） |
+> **什么是应用层矩阵（Application Matrix）？**  
+> 在应用层，我们关心：**每个用例到底在哪里实现、用什么命令/查询对象做输入、返回什么 DTO 或事件**。  
+> 应用层矩阵就是一张「对照表」，把「用例 → Command/Query → ApplicationService.方法 → 输出 DTO/事件」全部排在一行，方便：
+> - 从业务用例快速跳到对应的应用服务方法；
+> - 设计/检查 Command、DTO 是否齐全；
+> - 让 agent 能根据这张表生成或补全应用层代码（签名、DTO 结构），而不需要重新推导一次。
+
+| 用例                                | 命令/查询对象               | 应用服务与方法                                                 | 返回 DTO / 事件                                    |
+| ----------------------------------- | --------------------------- | -------------------------------------------------------------- | -------------------------------------------------- |
+| SubmitGoalUseCase                   | SubmitGoalCommand           | WorkflowOrchestrationApplicationService.SubmitGoal()           | RunDTO（RunId, StreamHandle）、RunCreatedEvent     |
+| SubmitGoalViaChannelUseCase         | SubmitGoalViaChannelCommand | WorkflowOrchestrationApplicationService.SubmitGoalViaChannel() | RunDTO、RunCreatedEvent                            |
+| PlanGoalUseCase                     | PlanGoalCommand             | PlanningApplicationService.PlanGoal()                          | PlanDTO、PlanProducedEvent                         |
+| ExecutePlanUseCase                  | （内部编排）                | WorkflowOrchestrationApplicationService.ExecutePlan()          | RunSummaryDTO、RunCompletedEvent / RunAbortedEvent |
+| DispatchTaskToAgentUseCase          | DispatchTaskCommand         | RuntimeApplicationService.DispatchTask()                       | DispatchResultDTO                                  |
+| MaintainTaskProgressUseCase         | UpdateTaskProgressCommand   | ExecutionStateApplicationService.UpdateTaskProgress()          | —                                                  |
+| CancelRunUseCase                    | CancelRunCommand            | RuntimeApplicationService.CancelRun()                          | —、RunCancelledEvent                               |
+| AbortRunOnConditionUseCase          | （监督节点调用）            | ExecutionStateApplicationService.EvaluateAbortCondition()      | shouldAbort + AbortReason                          |
+| SummarizeRunUseCase                 | SummarizeRunCommand         | WorkflowOrchestrationApplicationService.SummarizeRun()         | SummaryDTO                                         |
+| RegisterSkillOrToolToCatalogUseCase | RegisterSkillOrToolCommand  | CapabilityCatalogApplicationService.RegisterSkillOrTool()      | —                                                  |
+| ListAgentsUseCase                   | ListAgentsQuery             | CapabilityCatalogQueryService.ListAgents()                     | AgentListDTO                                       |
+| CheckAgentCapabilityUseCase         | CheckAgentCapabilityQuery   | CapabilityCatalogQueryService.CheckAgentCapability()           | CapabilityCheckDTO                                 |
+| StreamRunProgressUseCase            | StreamRunProgressQuery      | RuntimeQueryService.StreamRunProgress()                        | 流式事件（SSE/WS）                                 |
 
 ## 6.2 应用服务接口（按限界上下文）
 
@@ -462,6 +473,58 @@ pathfinder 当前为单用户目标工作流编排，配置仅保留工作流所
 
 ---
 
+## 附录：自治优化视角架构审计（2026-03）
+
+**总体评估**：已具备优化基础（限界上下文清晰、端口与编排分离、Cost/Observability 已列入支撑模块），但需补充若干项；执行链中的成本热点与失败/重试边界存在明显缺口，可观测与治理尚未纳入调用链与契约。
+
+### 1. 成本与资源
+
+| 审计项 | 结论 | 说明 |
+|--------|------|------|
+| 高成本热点 | **存在缺口** | 执行循环内每轮调用 `ProgressRepo.ListByRunId`；当 Plan 未给出 SuggestedAgent 时，每个就绪子任务都会调用 `AgentDiscovery.ListAgents`，存在重复发现。Planner 仅 SubmitGoal 时调用一次，合理。 |
+| 限流/缓存/批量 | **文档未显式考虑** | 未约定 Agent 列表的缓存粒度（如 per-run 或 TTL）、Progress 批量读/写的使用场景（ProgressMaintainer 有 BatchUpdateProgress，编排层未约定何时批量）、对 LLM/Provider 的限流或并发上限。 |
+| 建议 | 在 4.2.1 或编排用例处补充：ExecutePlan 内对 ListAgents 的调用策略（如每 Run 一次并缓存、或由 CapabilityCatalog 提供 per-run 快照）；Progress 读在循环内为必要，可约定「单轮内批量读一次、写可批量提交」；限流/并发上限放在 Provider 或 Gateway 层并在 needs 中体现。 |
+
+### 2. 安全与风险
+
+| 审计项 | 结论 | 说明 |
+|--------|------|------|
+| 派发/流式/取消/进度边界 | **部分清晰** | 取消与超时通过 AbortCheck（cancel_requested、deadline）在循环每轮前检查，边界清晰。流式、进度读写由 Gateway/Progress 端口隔离，失败契约未在文档中集中写明（如 Save 失败是否重试、Stream 断开是否视为不可恢复）。 |
+| 失控执行/无限重试 | **存在缺口** | 文档 5.5 约定「失败次数超过阈值则中止」且由 EvaluateAbortCondition 提供；当前执行循环未在每轮（或每 N 轮）调用 EvaluateAbortCondition，存在「多任务连续失败仍继续执行至结束」的缺口。单任务无重试（Fail 后标记完成），符合「不无限重试单任务」。 |
+| 建议 | 在 ExecutePlan/agent.Loop 设计处明确：每轮循环或每 K 次派发后调用 ExecutionStateApplicationService.EvaluateAbortCondition，若 shouldAbort 则立即退出循环并进入 SummarizeRun；文档 6.1 中 AbortRunOnConditionUseCase 的触发点写为「执行循环内周期性调用」。对 Dispatcher/Provider 约定「单次调用超时与最大重试次数」由 Provider 与 Infra 实现，不在编排层开放无界重试。 |
+
+### 3. 抽象粒度
+
+| 审计项 | 结论 | 说明 |
+|--------|------|------|
+| 过度抽象 | **未发现** | Port 与适配器对应外部依赖（Planner、Dispatcher、AgentDiscovery、TaskProgressRepository 等），符合「变化点隔离」；Infra 原则中「仅当多套可替换实现且含适配逻辑时用 adapters/」与 DDD 分层一致。 |
+| 抽象不足 | **可观测/成本未入链** | Cost、Observability 列为支撑模块，但 4.2.1 主流程与 4.2.2 provides/needs 未体现「谁在何时调用 Cost.Tracker.Record、何处埋点日志/指标/追踪」，后续做 shadow-test、预算/熔断时缺少明确接入点。 |
+| 建议 | 在 4.2.1 或 4.2.2 中补充：Provider 或包装 Provider 的调用方在每次 LLM 调用后调用 Cost.Tracker.Record；编排层在 SubmitGoal/ExecutePlan/SummarizeRun 边界记录 RunId 与阶段；Observability 由各包 provides 暴露 Logger/指标接口，needs 不强制，但文档约定「编排与 agent、provider 调用链应记录 run_id、phase、latency」。若未来做多 Provider 路由与熔断，建议在 Provider 与编排之间增加「路由/熔断」端口而非在编排内硬编码。 |
+
+### 4. 可观测与治理
+
+| 审计项 | 结论 | 说明 |
+|--------|------|------|
+| 日志/指标/追踪在文档中的位置 | **仅列模块，未定埋点** | 支撑模块表有 Observability（日志、指标、分布式追踪）与 Cost（token、调用次数、按 provider 汇总）；未约定 span 边界（如 per RunId、per PlanGoal、per Dispatch）、指标维度（run_id、phase、provider、status）。 |
+| Shadow-test / 预算/熔断 | **未设计** | 未预留「按比例复制流量到备用 Planner/Provider」或「在执行前/后检查预算与熔断状态」的接口或扩展点；Cost 当前为占位实现，无 per-run 或 per-tenant 预算模型。 |
+| 建议 | 在 4.3 或独立小节约定：Observability 提供「Span(ctx, runId, phase)」「RecordMetric(scope, name, value, labels)」等最小接口；Cost 提供 Record(ctx, provider, inputTokens, outputTokens) 并可扩展 RunId/Scope；编排层在 SubmitGoal 入口、ExecutePlan 每轮、SummarizeRun 出口打点。Shadow-test 与熔断可先作为「Planner/Dispatcher 的替代实现」通过 Port 注入，不在本文档展开实现细节。 |
+
+### 5. 与项目规则的契合度
+
+| 规则 | 结论 | 说明 |
+|------|------|------|
+| 禁止 fallback、根因解决 | **契合** | 文档未设计「规划失败则 fallback 到默认计划」或「Provider 失败则换备用模型」的流程；失败通过 EvaluateAbortCondition 与 SummarizeRun 处理，符合根因处理导向。 |
+| 禁止硬编码字符串逻辑 | **基本契合，有一处风险** | 状态与类型使用领域概念（TaskStatus、RunStatus 等），未要求用字符串匹配分支。若实现 EvaluateAbortCondition 时用 `AbortReason == "max_retries"` 等字符串判断，易违反规则；建议文档或领域层约定 AbortReason 为类型/常量而非魔术字符串。 |
+
+### 优先改进建议（按优先级）
+
+1. **P0**：在执行循环（ExecutePlan/agent.Loop）中接入 **EvaluateAbortCondition**：每轮或每 N 次派发后调用，shouldAbort 时退出循环并 SummarizeRun；在文档 2.4 用例依赖与 6.1 中明确该调用点。
+2. **P1**：在 4.2.1/4.2.2 中补充 **Cost 与 Observability 的调用关系**：谁在何时调用 Cost.Record、日志/指标在哪些边界打点（SubmitGoal、ExecutePlan 轮次、SummarizeRun、单次 Dispatch/LLM）。
+3. **P1**：约定 **ListAgents 的调用策略**：同一 Run 内建议缓存或单次发现，避免每任务每轮重复调用；可在 CapabilityCatalog 或编排层说明「ExecutePlan 开始时解析一次 Agent 列表供本 Run 使用」。
+4. **P2**：在领域层或 6.3 中明确 **AbortReason 为类型/枚举**，避免实现时用字符串比较；Dispatcher/Provider 的 **超时与最大重试次数** 在 needs 或 Infra 原则中写明由上界约束，禁止无界重试。
+
+---
+
 ## 文档修订
 
-- 第1部分输入自 FEATURES.md、设计文档；第2–3部分按 ddd-2-1、ddd-3-1 执行；第5部分按 ddd-5-1、5-2-1～5-2-4 精简落地；第6部分按 ddd-6-1；Infra 按 ddd-6-3。
+ 第1部分输入自 FEATURES.md、设计文档；第2–3部分按 ddd-2-1、ddd-3-1 执行；第5部分按 ddd-5-1、5-2-1～5-2-4 精简落地；第6部分按 ddd-6-1；Infra 按 ddd-6-3。附录「自治优化视角架构审计」于 2026-03 增补。
