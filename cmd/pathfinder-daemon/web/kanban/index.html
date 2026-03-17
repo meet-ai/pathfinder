@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pathfinder Kanban</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f6f8; }
+    header { padding: 12px 16px; background: #111827; color: #fff; }
+    .toolbar { display: flex; gap: 8px; padding: 10px 12px; background: #fff; border-bottom: 1px solid #e5e7eb; }
+    .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 12px; }
+    .col { background: #fff; border-radius: 8px; padding: 10px; min-height: 280px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+    .col h3 { margin: 0 0 10px; font-size: 14px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fafafa; cursor: pointer; }
+    .meta { color: #6b7280; font-size: 12px; margin-top: 4px; }
+    #detail { padding: 12px; }
+    button { background: #111827; color: #fff; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+    input { border: 1px solid #d1d5db; border-radius: 6px; padding: 6px 8px; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #111827; color: #e5e7eb; padding: 10px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Pathfinder 看板</strong>
+    <span style="margin-left: 8px; opacity: .85;">自动刷新 3s</span>
+  </header>
+  <main>
+    <section class="toolbar">
+      <input id="new-title" placeholder="任务" />
+      <input id="new-creator" placeholder="创建人" value="planner" />
+      <input id="new-reviewer" placeholder="审核人" value="reviewer-1" />
+      <button onclick="createCard()">新建任务</button>
+    </section>
+    <section class="board">
+      <div class="col"><h3>todo</h3><div id="todo"></div></div>
+      <div class="col"><h3>in_progress</h3><div id="in_progress"></div></div>
+      <div class="col"><h3>blocked</h3><div id="blocked"></div></div>
+      <div class="col"><h3>done</h3><div id="done"></div></div>
+    </section>
+    <section id="detail">
+      <h3>任务详情（点击任务查看）</h3>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button onclick="assignCard()">指派</button>
+        <button onclick="moveToInProgress()">推进到 in_progress</button>
+        <button onclick="moveToInReview()">推进到 in_review</button>
+        <button onclick="blockCard()">阻塞</button>
+        <button onclick="unblockCard()">解除阻塞</button>
+        <button onclick="reviewPass()">审核通过</button>
+      </div>
+      <pre id="detail-json">等待选择任务...</pre>
+    </section>
+  </main>
+  <script>
+    let selectedCardId = '';
+
+    async function loadBoard() {
+      const res = await fetch('/api/kanban/board');
+      const data = await res.json();
+      ['todo', 'in_progress', 'blocked', 'done'].forEach((c) => {
+        document.getElementById(c).innerHTML = '';
+      });
+      data.cards.forEach((card) => {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.innerHTML = '<div><strong>' + card.title + '</strong></div>'
+          + '<div class="meta">' + card.column + ' · assignee=' + (card.assignee || '-') + '</div>';
+        el.onclick = () => loadDetail(card.id);
+        const col = document.getElementById(card.column) || document.getElementById('todo');
+        col.appendChild(el);
+      });
+    }
+
+    async function loadDetail(cardId) {
+      selectedCardId = cardId;
+      const res = await fetch('/api/kanban/cards/' + encodeURIComponent(cardId));
+      if (!res.ok) {
+        document.getElementById('detail-json').textContent = '加载失败: ' + res.status;
+        return;
+      }
+      const data = await res.json();
+      document.getElementById('detail-json').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function post(path, body) {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || ('HTTP ' + res.status));
+      }
+      return res.json();
+    }
+
+    async function createCard() {
+      const title = document.getElementById('new-title').value.trim();
+      const creator = document.getElementById('new-creator').value.trim();
+      const reviewer = document.getElementById('new-reviewer').value.trim();
+      if (!title) return;
+      const card = await post('/api/kanban/cards', {
+        boardId: 'main-board',
+        title,
+        description: '',
+        creator,
+        reviewer
+      });
+      selectedCardId = card.id;
+      await loadBoard();
+      await loadDetail(card.id);
+    }
+
+    async function assignCard() {
+      if (!selectedCardId) return;
+      await post('/api/kanban/cards/' + encodeURIComponent(selectedCardId) + '/assign', {
+        taskType: 'feature',
+        operator: 'ui-user'
+      });
+      await loadBoard();
+      await loadDetail(selectedCardId);
+    }
+
+    async function moveToInProgress() {
+      if (!selectedCardId) return;
+      await post('/api/kanban/cards/' + encodeURIComponent(selectedCardId) + '/move', {
+        to: 'in_progress',
+        operator: 'ui-user'
+      });
+      await loadBoard();
+      await loadDetail(selectedCardId);
+    }
+
+    async function moveToInReview() {
+      if (!selectedCardId) return;
+      await post('/api/kanban/cards/' + encodeURIComponent(selectedCardId) + '/move', {
+        to: 'in_review',
+        operator: 'ui-user'
+      });
+      await loadBoard();
+      await loadDetail(selectedCardId);
+    }
+
+    async function blockCard() {
+      if (!selectedCardId) return;
+      await post('/api/kanban/cards/' + encodeURIComponent(selectedCardId) + '/block', {
+        reason: '等待外部依赖',
+        operator: 'ui-user'
+      });
+      await loadBoard();
+      await loadDetail(selectedCardId);
+    }
+
+    async function unblockCard() {
+      if (!selectedCardId) return;
+      await post('/api/kanban/cards/' + encodeURIComponent(selectedCardId) + '/unblock', {
+        operator: 'ui-user'
+      });
+      await loadBoard();
+      await loadDetail(selectedCardId);
+    }
+
+    async function reviewPass() {
+      if (!selectedCardId) return;
+      await post('/api/kanban/cards/' + encodeURIComponent(selectedCardId) + '/review-pass', {
+        reviewer: 'reviewer-1'
+      });
+      await loadBoard();
+      await loadDetail(selectedCardId);
+    }
+
+    async function tick() {
+      try {
+        await loadBoard();
+      } catch (e) {
+        document.getElementById('detail-json').textContent = '看板加载失败: ' + e;
+      }
+    }
+    tick();
+    setInterval(tick, 3000);
+  </script>
+</body>
+</html>

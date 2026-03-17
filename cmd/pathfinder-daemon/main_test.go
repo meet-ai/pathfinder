@@ -37,8 +37,8 @@ func newTestService(t *testing.T) *server {
 		Dispatcher:     dispatcher,
 	}
 	return &server{
-		svc:           svc,
-		capabilitySvc: nil,
+		svc:             svc,
+		capabilitySvc:   nil,
 		runtimeQuerySvc: nil,
 	}
 }
@@ -213,4 +213,3 @@ func TestHTTP_SubmitJob_Then_Cancel(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 }
-
